@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+
+
+<title>Good curl or bad?</title>
+
+<script src="README_files/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="README_files/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="README_files/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="README_files/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="README_files/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="README_files/navigation-1.1/tabsets.js"></script>
+<link href="README_files/highlightjs-1.1/default.css" rel="stylesheet" />
+<script src="README_files/highlightjs-1.1/highlight.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs && document.readyState && document.readyState === "complete") {
+   window.setTimeout(function() {
+      hljs.initHighlighting();
+   }, 0);
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+</style>
+
+
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+</script>
+
+<!-- code folding -->
+
+
+
+
+
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">Good curl or bad?</h1>
+
+</div>
+
+
+<div id="summary" class="section level2">
+<h2>Summary</h2>
+<p>Using data recorded on participants performing Bicep Curls, the data for roll, pitch, and yaw of the belt, arm, forearm, and dumbbell are used to predict the type of curl performed. This appears to perform well with a &gt; 97% accuracy of predictions on a 25% cross validation set.</p>
+</div>
+<div id="intro" class="section level2">
+<h2>Intro</h2>
+<p>Six participants were asked to perform Unilateral Dumbbell Bicep Curls. Each were asked to perform a set of 10 repetitions in one of five ways, recorded as Classes (“classe” column). The classes are A) according to specifications, B) throwing elbows forward, C) lifting halfway, D) lowering halfway, and E) throwing hips forward. Only class A is considered good form, others are considered common mistakes. There are a number of data collected in the performance of these tests.</p>
+<p>While there are many columns of data, we will focus on roll, pitch, and yaw measurements made on the belt, arm, forearm, and dumbbell. In particular, we will use measured values, not the grouped values (e.g. average, min, max of each window) to allow prediction of the test set.</p>
+<p>To build the model, the training set will be split to 75% are taken to train the model and 25% used for cross validation. This allows us to modify the model if necessary without using the test set.</p>
+<pre class="r"><code>suppressMessages(suppressWarnings(library(ggplot2)))
+suppressMessages(suppressWarnings(library(caret)))
+
+data_columns = c(&quot;roll_belt&quot;,
+                 &quot;pitch_belt&quot;,
+                 &quot;yaw_belt&quot;,
+                 &quot;roll_arm&quot;,
+                 &quot;pitch_arm&quot;,
+                 &quot;yaw_arm&quot;,
+                 &quot;roll_forearm&quot;,
+                 &quot;pitch_forearm&quot;,
+                 &quot;yaw_forearm&quot;,
+                 &quot;roll_dumbbell&quot;,
+                 &quot;pitch_dumbbell&quot;,
+                 &quot;yaw_dumbbell&quot;,
+                 &quot;classe&quot;
+                 )
+data_curl &lt;- read.csv(&quot;pml-training.csv&quot;, na.strings=c(&#39;#DIV/0!&#39;, &#39;&#39;, &#39;NA&#39;))
+#trainingset &lt;- averaged_windows[,c(grep(&quot;avg&quot;, names(averaged_windows)),160)]
+measurements &lt;- data_curl[data_columns] 
+
+intrain &lt;- createDataPartition(y=data_curl$classe, p=0.75, list=FALSE)
+training &lt;- measurements[intrain,]
+cross &lt;- measurements[-intrain,]
+names(training)</code></pre>
+<pre><code>##  [1] &quot;roll_belt&quot;      &quot;pitch_belt&quot;     &quot;yaw_belt&quot;       &quot;roll_arm&quot;      
+##  [5] &quot;pitch_arm&quot;      &quot;yaw_arm&quot;        &quot;roll_forearm&quot;   &quot;pitch_forearm&quot; 
+##  [9] &quot;yaw_forearm&quot;    &quot;roll_dumbbell&quot;  &quot;pitch_dumbbell&quot; &quot;yaw_dumbbell&quot;  
+## [13] &quot;classe&quot;</code></pre>
+<pre class="r"><code>testset &lt;- read.csv(&quot;pml-testing.csv&quot;, na.strings=c(&#39;#DIV/0!&#39;, &#39;&#39;, &#39;NA&#39;))</code></pre>
+<p>Plot the different features against the classes</p>
+<pre class="r"><code>par(mfrow = c(4,3))  # Each device is a row
+for (i in 1:12) {
+    plot(x = training[,i], 
+         y = training$classe, 
+         col=training$classe, 
+         xlab=names(training)[i], 
+         ylab=&quot;class&quot;,
+         ylim=c(1,5),
+         main=names(training)[i],
+         )
+}</code></pre>
+<p><img src="Figs/unnamed-chunk-2-1.png" width="768" /></p>
+<p>While it is not obvious which measurements will predict good form, there are distinct featuresm, like forearm pitch, that appear to trend with category.</p>
+<div id="pca" class="section level3">
+<h3>PCA</h3>
+<p>We perform a quick check to look for correlated data.</p>
+<pre class="r"><code>M&lt;- abs(cor(training[,-13]))
+diag(M) &lt;- 0
+which(M&gt;0.7, arr.ind=T)</code></pre>
+<pre><code>##           row col
+## yaw_belt    3   1
+## roll_belt   1   3</code></pre>
+<pre class="r"><code>#print(M)
+plot(training[c(&quot;yaw_belt&quot;,&quot;yaw_dumbbell&quot;, &quot;roll_belt&quot;, &quot;pitch_belt&quot;)], col=training$classe)</code></pre>
+<p><img src="Figs/unnamed-chunk-3-1.png" width="768" /> It apprears that there is a correlation between the yaw and roll of the belt. To a slightly lesser extent, the pitch of the belt is correlated. The surprising correlation is between the pitch of the belt and the yaw of the dumbbell, but from the plots, the correlation may just be a function of more or less movement.</p>
+</div>
+<div id="model-building" class="section level3">
+<h3>Model building</h3>
+<pre class="r"><code>modelFit &lt;- train(classe ~ ., data= training, method=&quot;rf&quot;)
+modelFit </code></pre>
+<pre><code>## Random Forest 
+## 
+## 14718 samples
+##    12 predictor
+##     5 classes: &#39;A&#39;, &#39;B&#39;, &#39;C&#39;, &#39;D&#39;, &#39;E&#39; 
+## 
+## No pre-processing
+## Resampling: Bootstrapped (25 reps) 
+## Summary of sample sizes: 14718, 14718, 14718, 14718, 14718, 14718, ... 
+## Resampling results across tuning parameters:
+## 
+##   mtry  Accuracy   Kappa    
+##    2    0.9819080  0.9771137
+##    7    0.9826029  0.9779954
+##   12    0.9765288  0.9703155
+## 
+## Accuracy was used to select the optimal model using  the largest value.
+## The final value used for the model was mtry = 7.</code></pre>
+<pre class="r"><code>#getTree(modFit$finalModel, k=2)
+pred_cross &lt;- predict(modelFit, cross)
+table(pred_cross, cross$classe)</code></pre>
+<pre><code>##           
+## pred_cross    A    B    C    D    E
+##          A 1391    8    0    0    0
+##          B    3  932    5    0    1
+##          C    0    9  843    1    4
+##          D    1    0    6  803    6
+##          E    0    0    1    0  890</code></pre>
+<pre class="r"><code># Determine percentage predicted correctly
+for (i in 1:5){
+    print(table(pred_cross, cross$classe)[i,i]/sum(table(pred_cross, cross$classe)[,i]))
+}</code></pre>
+<pre><code>## [1] 0.9971326
+## [1] 0.9820864
+## [1] 0.9859649
+## [1] 0.9987562
+## [1] 0.9877913</code></pre>
+<p>There is, for me, rather surprising accuracy in the predictions of each category. Finally, we apply it to the test set and obtain the following results:</p>
+<pre class="r"><code>pred_test &lt;- predict(modelFit, testset)
+pred_test</code></pre>
+<pre><code>##  [1] B A B A A E D B A A B C B A E E A B B B
+## Levels: A B C D E</code></pre>
+</div>
+</div>
+<div id="conclusions" class="section level2">
+<h2>Conclusions</h2>
+<p>With just using measurements of roll, pitch, and yaw of the belt, arm, forearm, and dumbbell, we can achieve a &gt; 97% accuracy based on cross validation using a Random Forest model.</p>
+</div>
+
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
