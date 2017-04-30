@@ -49,7 +49,7 @@ testset <- read.csv("pml-testing.csv", na.strings=c('#DIV/0!', '', 'NA'))
 ```
 
 Plot the different features against the classes
-```{r}
+```{r, dpi=36, out.width="600px", out.height="600px"}
 par(mfrow = c(4,3))  # Each device is a row
 for (i in 1:12) {
     plot(x = training[,i], 
@@ -67,7 +67,7 @@ While it is not obvious which measurements will predict good form, there are dis
 
 ### PCA
 We perform a quick check to look for correlated data.
-```{r}
+```{r, dpi=36, out.width="600px", out.height="600px"}
 M<- abs(cor(training[,-13]))
 diag(M) <- 0
 which(M>0.7, arr.ind=T)
@@ -79,7 +79,7 @@ It apprears that there is a correlation between the yaw and roll of the belt.  T
 ### Model building
 
 
-```{r}
+```{r, dpi=36, out.width="600px", out.height="600px"}
 modelFit <- train(classe ~ ., data= training, method="rf")
 modelFit 
 #getTree(modFit$finalModel, k=2)
