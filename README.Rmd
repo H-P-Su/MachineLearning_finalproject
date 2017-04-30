@@ -3,7 +3,7 @@ title: "Good curl or bad?"
 output: html_document
 ---
 
-```{r setup, global_options, include=FALSE}
+```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
